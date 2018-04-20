@@ -10,6 +10,11 @@ void Detector::PushPoint(QPoint pt)
     m_arrPoint.push_back(pt);
 }
 
+void Detector::ReplacePoint(QPoint pt, int index)
+{
+    m_arrPoint[index] = pt;
+}
+
 int Detector::GetPoints(std::vector<QPoint> &arrPoints)
 {
     arrPoints = m_arrPoint;

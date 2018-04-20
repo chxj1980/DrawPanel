@@ -49,7 +49,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent),
     m_pXmlManager = new XMLManager;
 
     //time signal
-    connect(m_pTimer, SIGNAL(timeout()), this, SLOT(OnTimerSlot()));
+    connect(m_pTimer, SIGNAL(timeout()), this, SLOT(OnTimeSlot()));
     m_arrDetector.clear();
 }
 
@@ -370,14 +370,21 @@ int MainWindow::DrawBitmap(int x, int y)
 //遍历成员变量绘制点
 int MainWindow::PaintBitmap()
 {
+    if(m_pix.isNull())
+        return -1;
     m_realPix = m_pix.scaled(ui->label->width(), ui->label->height());
     std::vector<Detector*>::iterator iterDetector = m_arrDetector.begin();
     for(; iterDetector != m_arrDetector.end(); iterDetector++)
     {
         QPen pen;
         pen.setStyle((Qt::PenStyle)m_style);
+#ifdef COLORDEF
         pen.setWidth((*iterDetector)->GetWidth());
         pen.setColor((*iterDetector)->GetColor());
+#else
+        pen.setWidth(10);
+        pen.setColor(m_color);
+#endif
         QPainter qp(&m_realPix);
         qp.setPen(pen);
         std::vector<QPoint> arrPoints;
@@ -388,14 +395,22 @@ int MainWindow::PaintBitmap()
             pen.setColor(QColor::fromRgb(255,125,125));
             qp.setPen(pen);
             qp.drawEllipse(arrPoints[i].x() - 5,arrPoints[i].y() - 5, 10, 10);
-            pen.setColor((*iterDetector)->GetColor());
+#ifdef COLORDEF
+        pen.setColor((*iterDetector)->GetColor());
+#else
+        pen.setColor(m_color);
+#endif
             qp.setPen(pen);
         }
         qp.drawLine(arrPoints[0], arrPoints[arrPoints.size() - 1]);
         pen.setColor(QColor::fromRgb(255,125,125));
         qp.setPen(pen);
         qp.drawEllipse(arrPoints[arrPoints.size() - 1].x() - 5,arrPoints[arrPoints.size() - 1].y() - 5, 10, 10);
+#ifdef COLORDEF
         pen.setColor((*iterDetector)->GetColor());
+#else
+        pen.setColor(m_color);
+#endif
         qp.setPen(pen);
         qp.end();
     }
@@ -459,10 +474,12 @@ int MainWindow::DrawPoint()
 void MainWindow::LoadImage()
 {
      m_strFilePath = QFileDialog::getOpenFileName(this, tr("Open Image"), "/home/jana", tr("Image Files (*.png *.jpeg *.jpg *.bmp)"));
+     if(m_strFilePath == "")
+             return;
      m_pix = QPixmap(m_strFilePath);
      m_nPixWidth = m_pix.width();
      m_nPixHeight = m_pix.height();
-     m_realPix = m_pix.scaled(ui->label->width(), ui->label->height());
+     m_realPix  = m_pix.scaled(ui->label->width(), ui->label->height());
      m_nRealHeight = m_realPix.height();
      m_nRealWidth = m_realPix.width();
 
@@ -527,7 +544,27 @@ void MainWindow::OnLoadData()
     QStringList strFileList = QStandardPaths::standardLocations(QStandardPaths::DesktopLocation);
     m_strXmlPath = QFileDialog::getOpenFileName(this, tr("Open XML"), strFileList[0], tr("Xml Files (*.xml)"));
     qDebug() << m_strXmlPath;
-    m_pXmlManager->LoadXML(m_strXmlPath);
+    if(m_strXmlPath != "")
+    {
+        m_pXmlManager->LoadXML(m_strXmlPath);
+        m_strFilePath = m_pXmlManager->GetImageData()->strImagePath;
+        qDebug() << "------------------------" << m_strFilePath;
+        m_pix = QPixmap(m_strFilePath);
+        m_realPix = m_pix.scaled(ui->label->geometry().width(), ui->label->geometry().height());
+        m_pXmlManager->GetDetectorData(m_arrDetector);
+        m_pix = QPixmap(m_strFilePath);
+        m_nPixWidth = m_pix.width();
+        m_nPixHeight = m_pix.height();
+        m_realPix  = m_pix.scaled(ui->label->width(), ui->label->height());
+        m_nRealHeight = m_realPix.height();
+        m_nRealWidth = m_realPix.width();
+        m_yPropertion = m_nPixHeight/m_nRealHeight;
+        m_xPropertion = m_nPixWidth/m_nRealWidth;
+        m_yOldPropertion = m_yPropertion;
+        m_xOldPropertion = m_xPropertion;
+        qDebug() << m_arrDetector.size() << "size";
+        PaintBitmap();
+    }
 }
 
 void MainWindow::OnSaveData()
@@ -545,6 +582,7 @@ void MainWindow::OnSaveData()
         imgData.nWidth = m_realPix.width();
         imgData.strImagePath = m_strFilePath;
         m_pXmlManager->SetImageData(&imgData);
+        m_pXmlManager->ClearData();
         m_pXmlManager->SetDetectorData(m_arrDetector);
         m_pXmlManager->SaveXML(file_path);
     }
@@ -629,6 +667,31 @@ void MainWindow::resizeEvent(QResizeEvent *event)
     //m_LabelPos.setY(position.y() + ui->mainToolBar->height() + ui->menuBar->height() + 10);
     //qDebug() << "起点坐标:" << m_LabelPos.x() << "---" << m_LabelPos.y();
     //ui->label->updateGeometry();
+
+    //在此函数中将所有点的坐标更新
+    if(!m_pix.isNull())
+    {
+         m_realPix = m_pix.scaled(ui->label->width(), ui->label->height());
+         m_xPropertion = m_pix.width()/m_realPix.width();
+         m_yPropertion = m_pix.height()/m_realPix.height();
+
+         //x1 = x*m_xPropertion/m_xPrePropertion;
+         int xp = m_xPropertion/m_xOldPropertion;
+         int yp = m_yPropertion/m_yOldPropertion;
+         std::vector<Detector*>::iterator iterDetector = m_arrDetector.end();
+         for(; iterDetector != m_arrDetector.end(); iterDetector++)
+         {
+             std::vector<QPoint> arrPoints;
+             (*iterDetector)->GetPoints(arrPoints);
+             int i = 0;
+             foreach (QPoint pt, arrPoints)
+             {
+                 (*iterDetector)->ReplacePoint(QPoint(arrPoints[i].x() * xp, arrPoints[i].y() * yp));
+                 i++;
+             }
+         }
+    }
+
 #if 0
     ui->label->setAlignment(Qt::AlignCenter);		//居中显示
     m_realPix = m_pix.scaled(ui->label->width(), ui->label->height());
@@ -670,6 +733,8 @@ void MainWindow::resizeEvent(QResizeEvent *event)
     }
 #endif
     PaintBitmap();
+    m_yOldPropertion = m_yPropertion;
+    m_xOldPropertion = m_xPropertion;
 }
 
 void MainWindow::mousePressEvent(QMouseEvent *event)
@@ -794,7 +859,8 @@ void MainWindow::mouseMoveEvent(QMouseEvent *event)
 void MainWindow::paintEvent(QPaintEvent *event)
 {
     //QPainter paiter(this);
-    ui->label->setPixmap(m_realPix.scaled(ui->label->geometry().width(), ui->label->geometry().height()));
+    if(!m_realPix.isNull())
+        ui->label->setPixmap(m_realPix.scaled(ui->label->geometry().width(), ui->label->geometry().height()));
     //paiter.drawPixmap(m_LabelPos.x(), m_LabelPos.y(), ui->label->geometry().width(), ui->label->geometry().height(), m_realPix);
 //    QPen pen;
 //    pen.setStyle((Qt::PenStyle)m_style);

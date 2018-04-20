@@ -22,6 +22,10 @@ public:
     void SetImageData(ImageData *pImgData);
     void GetImageData(ImageData *pImgData);
 
+    ImageData* GetImageData();
+
+    void ClearData(){ m_arrDetector.clear();}
+
 private:
     QString m_strPath;
     std::vector<Detector*> m_arrDetector;   //所有检测类

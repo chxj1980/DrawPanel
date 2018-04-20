@@ -13,6 +13,7 @@ public:
     Detector();
 
     void PushPoint(QPoint pt);
+    void ReplacePoint(QPoint pt, int index = 0);
     int GetPoints(std::vector<QPoint>& arrPoints);
     void PushPoint(const std::vector<QPoint>& arrPoints);
     QColor GetColor();

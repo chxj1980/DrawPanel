@@ -17,12 +17,14 @@ LIBS = -LD:/qtproj/ConfigManager/lib/mxml -lmxml1
 SOURCES += main.cpp\
         mainwindow.cpp \
     xmlmanager.cpp \
-    detector.cpp
+    detector.cpp \
+    strutils.cpp
 
 HEADERS  += mainwindow.h \
     xmlmanager.h \
     detector.h \
-    common.h
+    common.h \
+    strutils.h
 
 FORMS    += mainwindow.ui
 

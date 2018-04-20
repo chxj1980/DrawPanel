@@ -3,6 +3,13 @@
 #include <QFileDialog>
 #include <QString>
 #include <QTextStream>
+#include "strutils.h"
+#include <QPoint>
+#include <QDebug>
+
+using namespace STU;
+
+
 
 XMLManager::XMLManager(QString strXMLPath)
 {
@@ -22,11 +29,12 @@ void XMLManager::LoadXML(QString strXMLPath)
        fclose(fp);
 #endif
        QFile file(strXMLPath);
-       char chBuf[20000];
+       char chBuf[200000];
        if(file.open(QIODevice::ReadOnly | QIODevice::Text)) //以文本文式写入
        {
            strcpy(chBuf, file.readAll().toStdString().data());
-           tree = mxmlLoadString(NULL, chBuf,MXML_TEXT_CALLBACK);
+           //tree = mxmlLoadString(NULL, chBuf,MXML_TEXT_CALLBACK);
+           tree = mxmlLoadString(NULL, chBuf, MXML_OPAQUE_CALLBACK);
            file.close();
        }
 
@@ -40,46 +48,138 @@ void XMLManager::LoadXML(QString strXMLPath)
                if(ImageSrc != NULL)
                {
                    node = mxmlFindElement(ImageSrc, tree, "Width", NULL, NULL, MXML_DESCEND);
-                   qDebug() << node->child->value.text.string;
-                   QString strNode(node->child->value.text.string);
+                   //qDebug() << node->child->value.text.string;
+                   qDebug() << node->child->value.opaque;
+                   QString strNode(node->child->value.opaque);
                    m_pImageData->nWidth = strNode.toInt();
                    qDebug() << m_pImageData->nHeight;
                    node = mxmlFindElement(ImageSrc, tree, "Height", NULL, NULL, MXML_DESCEND);
-                   qDebug() << node->child->value.text.string;
+                   qDebug() << node->child->value.opaque;
                    m_pImageData->nHeight = strNode.toInt();
                    node = mxmlFindElement(tree, tree, "ImagePath", NULL, NULL, MXML_DESCEND);
-                   qDebug() << node->child->value.text.string;
-                   m_pImageData->strImagePath = node->child->value.text.string;
+                   qDebug() << node->child->value.opaque;
+                   m_pImageData->strImagePath = node->child->value.opaque;
                }
-               Detect = mxmlFindElement(ImageDetect, tree, "ImageSrc", NULL, NULL, MXML_DESCEND);
+               Detect = mxmlFindElement(ImageDetect, tree, "Detect", NULL, NULL, MXML_DESCEND);
                if(Detect != NULL)
                {
-                   DetectArea = mxmlFindElement(Detect, tree, "Detect", NULL, NULL, MXML_DESCEND);
+                   DetectArea = mxmlFindElement(Detect, tree, "DetectArea", NULL, NULL, MXML_DESCEND);
                    if(DetectArea)
                    {
                        node = mxmlFindElement(DetectArea, tree, "point", NULL, NULL, MXML_DESCEND);
                        if(node)
                        {
-                           QString strNode = node->child->value.text.string;
+                           Detector*  pDetector = new Detector;
+                           QString strNode = node->child->value.opaque;
+                           qDebug() << strNode;
+                           QPoint pt = StrUtils::SplitStrToPt(strNode, ' ');
+                           qDebug() << pt.x() << "-- == "<< pt.y();
+                           pDetector->PushPoint(pt);
+                           qDebug() << strNode;
                            while(1)
                            {
                                node = mxmlGetNextSibling(node);
                                if(!node)
                                    break;
-                               if(mxmlGetType(mode) == 0)
+                               if(mxmlGetType(node) == 0)
                                {
-                                   strNode = node->child->value.text.string;
+                                   strNode = node->child->value.opaque;
+                                   qDebug() << strNode;
+                                   pDetector->PushPoint(StrUtils::SplitStrToPt(strNode, ' '));
                                }
                            }
+                           pDetector->SetType(nDetArea);
+                           m_arrDetector.push_back(pDetector);
                        }
                        while(1)
                        {
                            DetectArea = mxmlGetNextSibling(DetectArea);
                            if(!DetectArea)
                                break;
-                           if(mxmlGetType(mode) == 0)
+                           if(mxmlGetType(DetectArea) == 0)
                            {
-                               strNode = node->child->value.text.string;
+                                Detector*  pDetector = new Detector;
+                               //strNode = node->child->value.text.string;
+                               node = mxmlFindElement(DetectArea, tree, "point", NULL, NULL, MXML_DESCEND);
+                               if(node)
+                               {
+                                   QString strNode = node->child->value.opaque;
+                                   qDebug() << strNode;
+                                   pDetector->PushPoint(StrUtils::SplitStrToPt(strNode, ' '));
+                                   while(1)
+                                   {
+                                       node = mxmlGetNextSibling(node);
+                                       if(!node)
+                                           break;
+                                       if(mxmlGetType(node) == 0)
+                                       {
+                                           strNode = node->child->value.opaque;
+                                           qDebug() << strNode;
+                                           pDetector->PushPoint(StrUtils::SplitStrToPt(strNode, ' '));
+                                       }
+                                   }
+                                   pDetector->SetType(nDetArea);
+                                   m_arrDetector.push_back(pDetector);
+                               }
+                           }
+                       }
+                   }
+
+                   TriLine = mxmlFindElement(Detect, tree, "TriLine", NULL, NULL, MXML_DESCEND);
+                   if(TriLine)
+                   {
+                       node = mxmlFindElement(DetectArea, tree, "point", NULL, NULL, MXML_DESCEND);
+                       if(node)
+                       {
+                           Detector*  pDetector = new Detector;
+                           QString strNode = node->child->value.opaque;
+                           qDebug() << strNode;
+                           pDetector->PushPoint(StrUtils::SplitStrToPt(strNode, ' '));
+                           while(1)
+                           {
+                               node = mxmlGetNextSibling(node);
+                               if(!node)
+                                   break;
+                               if(mxmlGetType(node) == 0)
+                               {
+                                   strNode = node->child->value.opaque;
+                                   qDebug() << strNode;
+                                   pDetector->PushPoint(StrUtils::SplitStrToPt(strNode, ' '));
+                               }
+                           }
+                           pDetector->SetType(nTriLine);
+                           m_arrDetector.push_back(pDetector);
+                       }
+                       while(1)
+                       {
+                           TriLine = mxmlGetNextSibling(TriLine);
+                           if(!TriLine)
+                               break;
+                           if(mxmlGetType(TriLine) == 0)
+                           {
+                               //strNode = node->child->value.text.string;
+                               node = mxmlFindElement(TriLine, tree, "point", NULL, NULL, MXML_DESCEND);
+                               Detector*  pDetector = new Detector;
+                               if(node)
+                               {
+                                   QString strNode = node->child->value.opaque;
+                                   qDebug() << strNode;
+                                   pDetector->PushPoint(StrUtils::SplitStrToPt(strNode, ' '));
+                                   while(1)
+                                   {
+                                       node = mxmlGetNextSibling(node);
+                                       if(!node)
+                                           break;
+                                       if(mxmlGetType(node) == 0)
+                                       {
+                                           strNode = node->child->value.opaque;
+                                           qDebug() << strNode;
+                                           pDetector->PushPoint(StrUtils::SplitStrToPt(strNode, ' '));
+                                       }
+                                   }
+                                   pDetector->SetType(nTriLine);
+                                   m_arrDetector.push_back(pDetector);
+                               }
                            }
                        }
                    }
@@ -98,16 +198,29 @@ const char *whitespace_cb(mxml_node_t *node, int where)
         return NULL;
 }
 
+ImageData* XMLManager::GetImageData()
+{
+    return m_pImageData;
+}
+
 int XMLManager::SaveXML(QString strXMLPath)
 {
     if(m_arrDetector.size() <= 0)
+    {
+        QFile file(strXMLPath);
+        if(file.open(QIODevice::WriteOnly | QIODevice::Text)) //以文本文式写入
+        {
+            QTextStream out(&file);
+            file.close();
+        }
         return 0;
+    }
     mxml_node_t *tree, *ImageDetect, *ImageSrc,
             *Detect, *DetectArea, *TriLine, *ImagePath, *node;
 
     tree = mxmlNewXML("1.0");
     char chText[100];
-    char chBuf[20000];
+    char chBuf[200000];
     if (tree != NULL)
     {
         ImageDetect = mxmlNewElement(tree, "ImageDetect");
