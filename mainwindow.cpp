@@ -24,18 +24,16 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent),
     ui(new Ui::MainWindow),m_wigth(10),m_style(1),m_color(Qt::red),
     m_xPropertion(1),m_yPropertion(1),m_nRealWidth(1),m_nRealHeight(1),
     m_AreaNum(0),m_strFilePath(""),m_xOldPropertion(1),m_yOldPropertion(1),
-    m_nCurType(0),m_nPreType(0),m_bBegin(true),m_bCanMoveView(false),m_nCurDetector(0),
-    m_bCanMovePoint(false),m_nPointIndex(0)
+    m_nCurType(0),m_nPreType(0),m_bBegin(true),m_bCanMoveView(false),m_nCurDetector(100),
+    m_bCanMovePoint(false),m_nPointIndex(0),m_bClick(false)
 {
     ui->setupUi(this);
-
+    setMinimumSize(1400, 960);
+    setMaximumSize(1400, 960);
     InitView();
-    InitToolBar();
+    //InitToolBar();
     InitRedioGroup();
     UpdatePen();
-    m_pWidthSpinBox->setRange(1, 200);  // 范围
-    m_pWidthSpinBox->setSingleStep(1); // 步长
-    m_pWidthSpinBox->setValue(m_wigth);
     qDebug() << m_wigth;
    // QPoint position = ui->label->rect().topLeft();
    // m_LabelPos.setX(position.x() + ui->listWidget->geometry().width() + 175);
@@ -45,6 +43,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent),
     m_painter = new QPainter;
     m_pTimer = new QTimer();
     m_pTimer->setInterval(1);
+
+    //ui->label->setMouseTracking(true);
 
     m_pXmlManager = new XMLManager;
 
@@ -98,13 +98,20 @@ void MainWindow::InitToolBar()
 //   m_pColorBtn = new QToolButton;
 //   m_pColorBtn->setText(tr("清除"));
 //   connect(m_pColorBtn,SIGNAL(clicked(bool)), this,SLOT(clear()));
-
+#if 1
    ui->mainToolBar->addWidget(m_pStyleLabel);
    ui->mainToolBar->addWidget(m_pStyleComboBox);
    ui->mainToolBar->addWidget(m_pWidthLabel);
    ui->mainToolBar->addWidget(m_pWidthSpinBox);
    ui->mainToolBar->addWidget(m_pColorLabel);
    ui->mainToolBar->addWidget(m_pColorBtn);
+
+#if 1
+    m_pWidthSpinBox->setRange(1, 200);  // 范围
+    m_pWidthSpinBox->setSingleStep(1); // 步长
+    m_pWidthSpinBox->setValue(m_wigth);
+#endif
+#endif
 }
 
 void MainWindow::UpdatePen()
@@ -370,11 +377,12 @@ int MainWindow::DrawBitmap(int x, int y)
 //遍历成员变量绘制点
 int MainWindow::PaintBitmap()
 {
+    qDebug() << "paint";
     if(m_pix.isNull())
         return -1;
     m_realPix = m_pix.scaled(ui->label->width(), ui->label->height());
     std::vector<Detector*>::iterator iterDetector = m_arrDetector.begin();
-    for(; iterDetector != m_arrDetector.end(); iterDetector++)
+    for(int nDetector = 0; iterDetector != m_arrDetector.end(); iterDetector++, nDetector++)
     {
         QPen pen;
         pen.setStyle((Qt::PenStyle)m_style);
@@ -383,7 +391,16 @@ int MainWindow::PaintBitmap()
         pen.setColor((*iterDetector)->GetColor());
 #else
         pen.setWidth(10);
-        pen.setColor(m_color);
+        if((*iterDetector)->GetType() == nDetArea)
+        {
+            pen.setColor(QColor::fromRgb(255,125,55));
+            //qDebug() << "(255,125,55)";
+        }
+        else
+        {
+            pen.setColor(QColor::fromRgb(255,66,125));
+            //qDebug() << "(255,125,55)";
+        }
 #endif
         QPainter qp(&m_realPix);
         qp.setPen(pen);
@@ -391,16 +408,40 @@ int MainWindow::PaintBitmap()
         (*iterDetector)->GetPoints(arrPoints);
         for(int i = 0; i < arrPoints.size() - 1; i++)
         {
+            if(m_bClick == false && m_nCurType == 2 && m_nCurDetector == nDetector)
+            {
+                pen.setColor(QColor::fromRgb(125,125,66));
+                qp.setPen(pen);
+                qDebug() << "Paint Color";
+            }
+
             qp.drawLine(arrPoints[i], arrPoints[i+1]);
             pen.setColor(QColor::fromRgb(255,125,125));
             qp.setPen(pen);
-            qp.drawEllipse(arrPoints[i].x() - 5,arrPoints[i].y() - 5, 10, 10);
+            qp.drawEllipse(arrPoints[i].x() - 5, arrPoints[i].y() - 5, 10, 10);
 #ifdef COLORDEF
         pen.setColor((*iterDetector)->GetColor());
 #else
-        pen.setColor(m_color);
+        //pen.setColor(m_color);
+        if((*iterDetector)->GetType() == nDetArea)
+        {
+            pen.setColor(QColor::fromRgb(255,125,55));
+            //qDebug() << "(255,125,55)";
+        }
+        else
+        {
+            pen.setColor(QColor::fromRgb(255,66,125));
+            //qDebug() << "(255,125,55)";
+        }
 #endif
             qp.setPen(pen);
+        }
+
+        if(m_bClick == false && m_nCurType == 2 && m_nCurDetector == nDetector)
+        {
+            pen.setColor(QColor::fromRgb(125,125,66));
+            qp.setPen(pen);
+            qDebug() << "Paint Color";
         }
         qp.drawLine(arrPoints[0], arrPoints[arrPoints.size() - 1]);
         pen.setColor(QColor::fromRgb(255,125,125));
@@ -409,7 +450,16 @@ int MainWindow::PaintBitmap()
 #ifdef COLORDEF
         pen.setColor((*iterDetector)->GetColor());
 #else
-        pen.setColor(m_color);
+        if((*iterDetector)->GetType() == nDetArea)
+        {
+            pen.setColor(QColor::fromRgb(255,125,55));
+            //qDebug() << "(255,125,55)";
+        }
+        else
+        {
+            pen.setColor(QColor::fromRgb(255,66,125));
+            //qDebug() << "(255,125,55)";
+        }
 #endif
         qp.setPen(pen);
         qp.end();
@@ -420,6 +470,8 @@ int MainWindow::PaintBitmap()
 //生成数据
 int MainWindow::DrawPoint()
 {
+    if(m_bClick == false)
+        return -1;
     Detector* pDetector;
     if(m_nCurType == 0)
     {
@@ -469,6 +521,44 @@ int MainWindow::DrawPoint()
         }
     }
     return 0;
+}
+
+void MainWindow::ChangePix(bool bIn)
+{
+    if(bIn) //转换实际分辨率
+    {
+        std::vector<Detector*>::iterator iterDetector = m_arrDetector.begin();
+        double dWidth = (double)m_pix.width()/(double)m_realPix.width();
+        double dHeight = (double)m_pix.height()/(double)m_realPix.height();
+        for(; iterDetector != m_arrDetector.end(); iterDetector++)
+        {
+            std::vector<QPoint> arrPoints;
+            (*iterDetector)->GetPoints(arrPoints);
+            int i = 0;
+            foreach (QPoint pt, arrPoints)
+            {
+                (*iterDetector)->ReplacePoint(QPoint(pt.x()*dWidth, pt.y()*dHeight), i);
+                i++;
+            }
+        }
+    }
+    else    //转换显示分辨率
+    {
+        std::vector<Detector*>::iterator iterDetector = m_arrDetector.begin();
+        double dWidth = (double)m_realPix.width()/(double)m_pix.width();
+        double dHeight = (double)m_realPix.height()/(double)m_pix.height();
+        for(; iterDetector != m_arrDetector.end(); iterDetector++)
+        {
+            std::vector<QPoint> arrPoints;
+            (*iterDetector)->GetPoints(arrPoints);
+            int i = 0;
+            foreach (QPoint pt, arrPoints)
+            {
+                (*iterDetector)->ReplacePoint(QPoint(pt.x()*dWidth, pt.y()*dHeight), i);
+                i++;
+            }
+        }
+    }
 }
 
 void MainWindow::LoadImage()
@@ -550,9 +640,13 @@ void MainWindow::OnLoadData()
         m_strFilePath = m_pXmlManager->GetImageData()->strImagePath;
         qDebug() << "------------------------" << m_strFilePath;
         m_pix = QPixmap(m_strFilePath);
+        if(m_pix.isNull())
+            return;
         m_realPix = m_pix.scaled(ui->label->geometry().width(), ui->label->geometry().height());
+
         m_pXmlManager->GetDetectorData(m_arrDetector);
-        m_pix = QPixmap(m_strFilePath);
+        ChangePix(false);
+
         m_nPixWidth = m_pix.width();
         m_nPixHeight = m_pix.height();
         m_realPix  = m_pix.scaled(ui->label->width(), ui->label->height());
@@ -578,13 +672,20 @@ void MainWindow::OnSaveData()
         qDebug() << file_path;
         file_path = QFileDialog::getSaveFileName(this, tr("Save File"),  file_path, tr("XML (*.xml)"));
         ImageData imgData;
-        imgData.nHeight = m_realPix.height();
-        imgData.nWidth = m_realPix.width();
+        //imgData.nHeight = m_realPix.height();
+        //imgData.nWidth = m_realPix.width();
+        imgData.nHeight = m_pix.height();
+        imgData.nWidth = m_pix.width();
         imgData.strImagePath = m_strFilePath;
         m_pXmlManager->SetImageData(&imgData);
         m_pXmlManager->ClearData();
+
+        //图片分辨率转换
+        ChangePix(true);
+
         m_pXmlManager->SetDetectorData(m_arrDetector);
         m_pXmlManager->SaveXML(file_path);
+        ChangePix(false);
     }
 }
 
@@ -739,6 +840,7 @@ void MainWindow::resizeEvent(QResizeEvent *event)
 
 void MainWindow::mousePressEvent(QMouseEvent *event)
 {
+    m_bClick = true;
     qDebug() << "PressEvent";
     if(event->y() < (ui->label->y() + ui->mainToolBar->height() + ui->menuBar->height())
             || event->y() > (ui->label->y() + ui->mainToolBar->height() + ui->menuBar->height() + ui->label->height()))
@@ -762,10 +864,11 @@ void MainWindow::mousePressEvent(QMouseEvent *event)
                 qDebug() << "CanMove";
                 return;
             }
-            else if((*iterDetector)->IsInArea(m_GlobalOldPos))
+            else if(/*(*iterDetector)->IsInArea(m_GlobalOldPos)*/(*iterDetector)->IsInLine(m_GlobalOldPos))
             {
                 m_nCurDetector = i;
                 m_bCanMoveView = true;
+                return;
             }
             i++;
         }
@@ -785,6 +888,7 @@ void MainWindow::mousePressEvent(QMouseEvent *event)
 
 void MainWindow::mouseReleaseEvent(QMouseEvent *event)
 {
+    m_bClick = false;
     qDebug() << "ReleaseEvent";
     m_bCanMovePoint = false;
     m_bCanMoveView = false;
@@ -808,12 +912,40 @@ void MainWindow::mouseReleaseEvent(QMouseEvent *event)
 
 void MainWindow::mouseDoubleClickEvent(QMouseEvent *event)
 {
-
+    qDebug() << "mouseDoubleClickEevnt";
 }
 
 void MainWindow::mouseMoveEvent(QMouseEvent *event)
 {
     qDebug() << "moveEvent";
+    if(m_nCurType == 2 && m_bClick == false)
+    {
+        m_qCurGlobal = event->globalPos();
+        m_GlobalOldPos = ui->label->mapFromGlobal(m_qCurGlobal);
+         m_qPreGlobal = m_GlobalOldPos;
+        std::vector<Detector*>::iterator iterDetector = m_arrDetector.begin();
+        int i = 0;
+        for(; iterDetector != m_arrDetector.end(); iterDetector++)
+        {
+            m_nPointIndex = (*iterDetector)->IsSamePoint(m_GlobalOldPos);
+            if(m_nPointIndex >= 0)
+            {
+                m_nCurDetector = i;
+                //m_bCanMovePoint = true;
+                qDebug() << "Color Change" << i;
+                break;
+            }
+            else if(/*(*iterDetector)->IsInArea(m_GlobalOldPos)*/(*iterDetector)->IsInLine(m_GlobalOldPos))
+            {
+                m_nCurDetector = i;
+                //m_bCanMoveView = true;
+                qDebug() << "Color Change" << i;
+                break;
+            }
+            i++;
+        }
+    }
+
     //只有选择了完成才可以平移图像
     if(m_nCurType == 2 && m_bCanMovePoint)
     {

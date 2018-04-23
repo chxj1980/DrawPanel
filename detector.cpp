@@ -1,4 +1,6 @@
 #include "detector.h"
+#include "graphmath.h"
+
 
 Detector::Detector():m_Type(nNone)
 {
@@ -121,4 +123,74 @@ bool Detector::IsInArea(QPoint pt)
     }
     //是否在其内
     return bIn;
+}
+
+bool Detector::IsInArea(QPoint pt, const std::vector<QPoint> arrPoint)
+{
+    int px = pt.x();
+    int py = pt.y();
+    bool bIn = false;
+    for(int i = 0, l = arrPoint.size(), j = l-1; i < l; j = i,i++)
+    {
+        int sx = arrPoint[i].x();
+        int sy = arrPoint[i].y();
+        int tx = arrPoint[j].x();
+        int ty = arrPoint[j].y();
+
+        //点与边顶点重合
+        if((sx == px && sy == py)||(tx==px&&ty==py))
+        {
+            return true;
+        }
+        //判断线段端点是否在射线两侧
+        if((sy < py && ty >=py)||sy >=py && ty<py)
+        {
+            int x = sx + (py - sy)*(tx-sx)/(ty-sy);
+            //多边形边上
+            if(x == px)
+            {
+                return true;
+            }
+            //射线过多边形边
+            if(x > px)
+            {
+                bIn = !bIn;
+            }
+        }
+    }
+    //是否在其内
+    return bIn;
+}
+
+/*
+ * 是否在线里
+ *  o--------------------------o
+ *  |                          |
+ *  o--------------------------o
+ */
+bool Detector::IsInLine(QPoint pt)
+{
+    for(int i = 0; i < m_arrPoint.size() - 1; i++)
+    {
+        if(IsInLine(pt, m_arrPoint[i], m_arrPoint[i+1]))
+            return true;
+    }
+     if(IsInLine(pt, m_arrPoint[0], m_arrPoint[m_arrPoint.size() - 1]))
+         return true;
+    return false;
+}
+
+/*
+ * 是否在线里
+ *  o--------------------------o
+ *  |                          |
+ *  o--------------------------o
+ */
+bool Detector::IsInLine(QPoint pt, QPoint pt1, QPoint pt2)
+{
+    std::vector<QPoint> arrPoint;
+    GetRectagle(pt1, pt2, arrPoint);
+    if(arrPoint.size() < 4)
+        return false;
+    return IsInArea(pt, arrPoint);
 }

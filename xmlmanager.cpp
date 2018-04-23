@@ -70,10 +70,11 @@ void XMLManager::LoadXML(QString strXMLPath)
                        if(node)
                        {
                            Detector*  pDetector = new Detector;
+                           qDebug() << "DetectArea  1";
                            QString strNode = node->child->value.opaque;
-                           qDebug() << strNode;
+                           //qDebug() << strNode;
                            QPoint pt = StrUtils::SplitStrToPt(strNode, ' ');
-                           qDebug() << pt.x() << "-- == "<< pt.y();
+                           //qDebug() << pt.x() << "-- == "<< pt.y();
                            pDetector->PushPoint(pt);
                            qDebug() << strNode;
                            while(1)
@@ -96,9 +97,18 @@ void XMLManager::LoadXML(QString strXMLPath)
                            DetectArea = mxmlGetNextSibling(DetectArea);
                            if(!DetectArea)
                                break;
+                           qDebug() << "bb";
+                           qDebug() << "Element==" << mxmlGetElement(DetectArea);
+                           QString strTmp(mxmlGetElement(DetectArea));
+                           strTmp = strTmp.trimmed();
+                           if(!(strTmp.compare(QString("DetectArea").trimmed()) == 0))
+                               continue;
+
+                           //qDebug() << "Element---" << mxmlGetElement(DetectArea);
                            if(mxmlGetType(DetectArea) == 0)
                            {
                                 Detector*  pDetector = new Detector;
+                                 qDebug() << "DetectArea  2";
                                //strNode = node->child->value.text.string;
                                node = mxmlFindElement(DetectArea, tree, "point", NULL, NULL, MXML_DESCEND);
                                if(node)
@@ -128,10 +138,11 @@ void XMLManager::LoadXML(QString strXMLPath)
                    TriLine = mxmlFindElement(Detect, tree, "TriLine", NULL, NULL, MXML_DESCEND);
                    if(TriLine)
                    {
-                       node = mxmlFindElement(DetectArea, tree, "point", NULL, NULL, MXML_DESCEND);
+                       node = mxmlFindElement(TriLine, tree, "point", NULL, NULL, MXML_DESCEND);
                        if(node)
                        {
                            Detector*  pDetector = new Detector;
+                           qDebug() << "TriLine  1";
                            QString strNode = node->child->value.opaque;
                            qDebug() << strNode;
                            pDetector->PushPoint(StrUtils::SplitStrToPt(strNode, ' '));
@@ -155,11 +166,18 @@ void XMLManager::LoadXML(QString strXMLPath)
                            TriLine = mxmlGetNextSibling(TriLine);
                            if(!TriLine)
                                break;
+                           qDebug() << "Element---" << mxmlGetElement(TriLine);
+                           QString strTmp(mxmlGetElement(TriLine));
+                           strTmp = strTmp.trimmed();
+                           if(!(strTmp.compare(QString("TriLine").trimmed()) == 0))
+                               continue;
+                           //qDebug() << "Element---" << mxmlGetElement(TriLine);
                            if(mxmlGetType(TriLine) == 0)
                            {
                                //strNode = node->child->value.text.string;
                                node = mxmlFindElement(TriLine, tree, "point", NULL, NULL, MXML_DESCEND);
                                Detector*  pDetector = new Detector;
+                               qDebug() << "TriLine  2";
                                if(node)
                                {
                                    QString strNode = node->child->value.opaque;

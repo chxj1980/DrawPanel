@@ -31,7 +31,7 @@ QPoint STU::StrUtils::SplitStrToPt(QString strXY, char chIdle)
     {
         j++;
     }
-    qDebug() << "2" << j;
+    //qDebug() << "2" << j;
     char chX1[20];
     j = 0;
     while(chX[j] != chIdle)
@@ -39,11 +39,11 @@ QPoint STU::StrUtils::SplitStrToPt(QString strXY, char chIdle)
         chX1[j] = chX[j];
         j++;
     }
-    qDebug() << "3";
+    //qDebug() << "3";
     char chX2[20];
     const char* chBufx = strchr(chX1, '=');
     strcpy(chX, chBufx);
-    qDebug() << chX;
+    //qDebug() << chX;
     j = 1;
     while(chX[j] != '\0')
     {
@@ -52,7 +52,7 @@ QPoint STU::StrUtils::SplitStrToPt(QString strXY, char chIdle)
     }
 
     const char* chBuf = strchr(strXY.toStdString().data(), chIdle);
-    qDebug() << chBuf;
+    //qDebug() << chBuf;
     const char* chY = strchr(chBuf, '=');
     char chY1[20];
     char chY2[20];
@@ -65,6 +65,6 @@ QPoint STU::StrUtils::SplitStrToPt(QString strXY, char chIdle)
     }
 
     QPoint pt = QPoint(atoi(chX2), atoi(chY2));
-    qDebug() << pt.x() << "--" << pt.y();
+    //qDebug() << pt.x() << "--" << pt.y();
     return pt;
 }

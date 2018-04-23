@@ -18,13 +18,15 @@ SOURCES += main.cpp\
         mainwindow.cpp \
     xmlmanager.cpp \
     detector.cpp \
-    strutils.cpp
+    strutils.cpp \
+    graphmath.cpp
 
 HEADERS  += mainwindow.h \
     xmlmanager.h \
     detector.h \
     common.h \
-    strutils.h
+    strutils.h \
+    graphmath.h
 
 FORMS    += mainwindow.ui
 
