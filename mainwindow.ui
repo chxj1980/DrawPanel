@@ -37,7 +37,7 @@
      <number>0</number>
     </property>
     <item>
-     <layout class="QVBoxLayout" name="verticalLayout" stretch="15,0">
+     <layout class="QVBoxLayout" name="verticalLayout" stretch="7,1">
       <property name="spacing">
        <number>0</number>
       </property>
@@ -104,6 +104,7 @@
    <addaction name="actionSaveXml"/>
    <addaction name="actionLoadXml"/>
    <addaction name="actionResetConfig"/>
+   <addaction name="actionReTry"/>
    <addaction name="separator"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
@@ -124,13 +125,14 @@
     <addaction name="actionSaveXml"/>
     <addaction name="actionLoadXml"/>
     <addaction name="actionResetConfig"/>
+    <addaction name="actionReTry"/>
    </widget>
    <addaction name="menuOpenPic"/>
   </widget>
   <action name="actionOpenImage">
    <property name="icon">
     <iconset resource="stylesheet/image.qrc">
-     <normaloff>:/new/icon/info.png</normaloff>:/new/icon/info.png</iconset>
+     <normaloff>:/new/icon/openfile.jpg</normaloff>:/new/icon/openfile.jpg</iconset>
    </property>
    <property name="text">
     <string>打开图片</string>
@@ -139,7 +141,7 @@
   <action name="actionSaveXml">
    <property name="icon">
     <iconset resource="stylesheet/image.qrc">
-     <normaloff>:/new/icon/error.png</normaloff>:/new/icon/error.png</iconset>
+     <normaloff>:/new/icon/info.png</normaloff>:/new/icon/info.png</iconset>
    </property>
    <property name="text">
     <string>保存XML</string>
@@ -148,7 +150,7 @@
   <action name="actionLoadXml">
    <property name="icon">
     <iconset resource="stylesheet/image.qrc">
-     <normaloff>:/new/icon/radio_selected.png</normaloff>:/new/icon/radio_selected.png</iconset>
+     <normaloff>:/new/icon/open.jpg</normaloff>:/new/icon/open.jpg</iconset>
    </property>
    <property name="text">
     <string>加载XML</string>
@@ -157,13 +159,17 @@
   <action name="actionResetConfig">
    <property name="icon">
     <iconset resource="stylesheet/image.qrc">
-     <normaloff>:/new/icon/radio_normal.png</normaloff>:/new/icon/radio_normal.png</iconset>
+     <normaloff>:/new/icon/reset.jpg</normaloff>:/new/icon/reset.jpg</iconset>
    </property>
    <property name="text">
     <string>重置配置</string>
    </property>
   </action>
-  <action name="actionRaTry">
+  <action name="actionReTry">
+   <property name="icon">
+    <iconset resource="stylesheet/image.qrc">
+     <normaloff>:/new/icon/retry.jpg</normaloff>:/new/icon/retry.jpg</iconset>
+   </property>
    <property name="text">
     <string>撤销</string>
    </property>

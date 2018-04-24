@@ -11,6 +11,7 @@ class XMLManager
 {
 public:
     XMLManager(QString strXMLPath = "");
+    ~XMLManager();
 
     void LoadXML(QString strXMLPath = "");
 

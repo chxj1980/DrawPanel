@@ -60,6 +60,7 @@ private slots:
     void OnSetColor();
     void OnRadioChecked(QAbstractButton* aBtn);
     void OnTimeSlot();
+    void OnReTry();
 
 protected:
     void resizeEvent(QResizeEvent *event);

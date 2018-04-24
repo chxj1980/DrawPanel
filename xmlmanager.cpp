@@ -17,6 +17,11 @@ XMLManager::XMLManager(QString strXMLPath)
     m_pImageData = new ImageData;
 }
 
+XMLManager::~XMLManager()
+{
+    delete m_pImageData;
+}
+
 //解析xml文件
 void XMLManager::LoadXML(QString strXMLPath)
 {

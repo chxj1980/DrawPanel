@@ -50,13 +50,20 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent),
 
     //time signal
     connect(m_pTimer, SIGNAL(timeout()), this, SLOT(OnTimeSlot()));
+    m_pTimer->start();
     m_arrDetector.clear();
+    m_pix = QPixmap(ui->label->geometry().width(), ui->label->geometry().height());
+    m_pix.fill(Qt::white);
+    m_realPix = m_pix;
 }
 
 
 
 MainWindow::~MainWindow()
 {
+    delete m_painter;
+    delete m_pTimer;
+    delete m_pXmlManager;
     delete ui;
 }
 
@@ -69,6 +76,7 @@ void MainWindow::InitView()
     QObject::connect(ui->actionResetConfig, SIGNAL(triggered()), this, SLOT(ResetView()));
     QObject::connect(ui->actionLoadXml, SIGNAL(triggered()), this, SLOT(OnLoadData()));
     QObject::connect(ui->actionSaveXml, SIGNAL(triggered()), this, SLOT(OnSaveData()));
+    QObject::connect(ui->actionReTry, SIGNAL(triggered()), this, SLOT(OnReTry()));
     //动态记载一些功能选项
 }
 
@@ -151,7 +159,7 @@ void MainWindow::InitRedioGroup()
     m_pBtnGroup->addButton(m_pRadioTriLine);
 
     m_pRadioComplete = new QRadioButton(this);
-    sprintf(chText, "%s", "完成");
+    sprintf(chText, "%s", "编辑");
     m_pRadioComplete->setText(pCoder->toUnicode(chText));
     pLayout->addWidget(m_pRadioComplete);
     m_pBtnGroup->addButton(m_pRadioComplete);
@@ -786,6 +794,20 @@ void MainWindow::OnTimeSlot()
 {
     //m_qPreGlobal = QCursor::pos();
     //m_qPreGlobal = ui->label->mapFromGlobal(QCursor::pos());
+
+    if(m_nCurType == 2)
+    {
+        ui->actionReTry->setEnabled(true);
+    }
+    else
+    {
+        ui->actionReTry->setEnabled(false);
+    }
+}
+
+void MainWindow::OnReTry()
+{
+    DelPoint();
 }
 
 void MainWindow::resizeEvent(QResizeEvent *event)
