@@ -47,6 +47,7 @@ private:
     int  PaintBitmap();
     int  DrawPoint();
     void ChangePix(bool bIn);   //图片分辨率转换
+    void ReSortData(int nIndex);          //重新排序
 
 
 private slots:
@@ -102,8 +103,10 @@ private:
     bool       m_bBegin;        //起始点
     bool       m_bCanMoveView;    //是否可以移动数据
     bool       m_bCanMovePoint;   //移动点
-    int        m_nPointIndex;        //移动额第几个点
+    int        m_nPointIndex;     //移动额第几个点
     bool       m_bClick;          //用户是否点击鼠标
+    int        m_nReEdit;         //再次可编辑状态
+    bool       m_bDoubleClick;    //是否双击
 
 
     QPoint     m_qCurPt;        //上次鼠标点击的位置

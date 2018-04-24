@@ -25,7 +25,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent),
     m_xPropertion(1),m_yPropertion(1),m_nRealWidth(1),m_nRealHeight(1),
     m_AreaNum(0),m_strFilePath(""),m_xOldPropertion(1),m_yOldPropertion(1),
     m_nCurType(0),m_nPreType(0),m_bBegin(true),m_bCanMoveView(false),m_nCurDetector(100),
-    m_bCanMovePoint(false),m_nPointIndex(0),m_bClick(false)
+    m_bCanMovePoint(false),m_nPointIndex(0),m_bClick(false),m_nReEdit(100),m_bDoubleClick(false)
 {
     ui->setupUi(this);
     setMinimumSize(1400, 960);
@@ -177,6 +177,8 @@ int MainWindow::DelPoint()
         iterDetector--;
         if((*iterDetector)->GetPointSize() == 1)
         {
+            //if((*iterDetector)->GetType() == nTriLine)
+            m_bBegin = true;
             m_arrDetector.erase(m_arrDetector.end() - 1);
             //if(m_arrDetector.size()>0)
             //m_qCurPt = (*iterDetector--)->GetLastPoint();
@@ -464,6 +466,9 @@ int MainWindow::PaintBitmap()
         qp.setPen(pen);
         qp.end();
     }
+    if(m_bClick == false && m_nCurType == 2)
+        m_nCurDetector = 100;
+
     return 0;
 }
 
@@ -561,6 +566,27 @@ void MainWindow::ChangePix(bool bIn)
     }
 }
 
+//从新排序还是实现可编辑状态
+void MainWindow::ReSortData(int nIndex)
+{
+    if(m_arrDetector.size() >= 2)
+    {
+        std::swap(m_arrDetector[nIndex], m_arrDetector[m_arrDetector.size() - 1]);
+        m_bBegin = false;
+        if(m_arrDetector[m_arrDetector.size() - 1]->GetType() == nDetArea)
+        {
+            m_nCurType = 0;
+            m_pRadioArea->setChecked(true);
+        }
+        else if(m_arrDetector[m_arrDetector.size() - 1]->GetType() == nTriLine)
+        {
+            m_nCurType = 1;
+            m_pRadioTriLine->setChecked(true);
+            m_bBegin = true;
+        }
+    }
+}
+
 void MainWindow::LoadImage()
 {
      m_strFilePath = QFileDialog::getOpenFileName(this, tr("Open Image"), "/home/jana", tr("Image Files (*.png *.jpeg *.jpg *.bmp)"));
@@ -636,7 +662,9 @@ void MainWindow::OnLoadData()
     qDebug() << m_strXmlPath;
     if(m_strXmlPath != "")
     {
+        m_arrDetector.clear();
         m_pXmlManager->LoadXML(m_strXmlPath);
+        qDebug() << "------------------------" << m_strXmlPath;
         m_strFilePath = m_pXmlManager->GetImageData()->strImagePath;
         qDebug() << "------------------------" << m_strFilePath;
         m_pix = QPixmap(m_strFilePath);
@@ -889,6 +917,7 @@ void MainWindow::mousePressEvent(QMouseEvent *event)
 void MainWindow::mouseReleaseEvent(QMouseEvent *event)
 {
     m_bClick = false;
+    m_bDoubleClick = false;
     qDebug() << "ReleaseEvent";
     m_bCanMovePoint = false;
     m_bCanMoveView = false;
@@ -910,9 +939,47 @@ void MainWindow::mouseReleaseEvent(QMouseEvent *event)
     //qDebug() << m_GlobalOldPos.x() << "---" << m_GlobalOldPos.y();
 }
 
+//暂时在这里添加一个功能，用户双击某一根线时遍历数组，找到用户点击的对象移至数组顶层再次可编辑状态
 void MainWindow::mouseDoubleClickEvent(QMouseEvent *event)
 {
     qDebug() << "mouseDoubleClickEevnt";
+    m_bDoubleClick = true;
+    qDebug() << "PressEvent";
+    if(event->y() < (ui->label->y() + ui->mainToolBar->height() + ui->menuBar->height())
+            || event->y() > (ui->label->y() + ui->mainToolBar->height() + ui->menuBar->height() + ui->label->height()))
+       return;
+    if(m_nCurType == 2)
+    {
+        //处理用户选择区域是否符合要求
+        //m_qCurPt = QPoint(event->x(), event->y());
+        m_qCurGlobal = event->globalPos();
+        m_GlobalOldPos = ui->label->mapFromGlobal(m_qCurGlobal);
+         m_qPreGlobal = m_GlobalOldPos;
+        std::vector<Detector*>::iterator iterDetector = m_arrDetector.begin();
+        int i = 0;
+        for(; iterDetector != m_arrDetector.end(); iterDetector++)
+        {
+            m_nPointIndex = (*iterDetector)->IsSamePoint(m_GlobalOldPos);
+            if(m_nPointIndex >= 0)
+            {
+                m_nReEdit = i;
+                qDebug() << "ReEdit" << i;
+                ReSortData(m_nReEdit);
+                PaintBitmap();
+                return;
+            }
+            else if(/*(*iterDetector)->IsInArea(m_GlobalOldPos)*/(*iterDetector)->IsInLine(m_GlobalOldPos))
+            {
+                m_nReEdit = i;
+                qDebug() << "ReEdit" << i;
+                ReSortData(m_nReEdit);
+                PaintBitmap();
+                return;
+            }
+            i++;
+        }
+        return;
+    }
 }
 
 void MainWindow::mouseMoveEvent(QMouseEvent *event)
@@ -982,7 +1049,7 @@ void MainWindow::mouseMoveEvent(QMouseEvent *event)
             m_arrDetector[m_nCurDetector]->MoveView(m_GlobalOldPos.x() - m_qPreGlobal.x(), m_GlobalOldPos.y() - m_qPreGlobal.y());
         }
     }
-    DrawPoint();
+    //DrawPoint();
     PaintBitmap();
 
     m_qPreGlobal = m_GlobalOldPos;

@@ -64,7 +64,7 @@ int Detector::IsSamePoint(QPoint pt)
     int i = 0;
     foreach (QPoint mPt, m_arrPoint)
     {
-        if(abs(mPt.x() - pt.x()) < 5 && abs(mPt.y() - pt.y()) < 5)
+        if(abs(mPt.x() - pt.x()) < 10 && abs(mPt.y() - pt.y()) < 10)
             return i;
         i++;
     }

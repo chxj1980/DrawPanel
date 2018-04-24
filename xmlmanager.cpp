@@ -22,6 +22,7 @@ void XMLManager::LoadXML(QString strXMLPath)
 {
        mxml_node_t *tree, *node, *ImageDetect, *ImageSrc,
                *Detect, *DetectArea, *TriLine, *ImagePath;
+       m_arrDetector.clear();
 #if 0
        FILE *fp;
        fp = fopen(strXMLPath.toStdString().data(), "r");
@@ -57,9 +58,15 @@ void XMLManager::LoadXML(QString strXMLPath)
                    qDebug() << node->child->value.opaque;
                    m_pImageData->nHeight = strNode.toInt();
                    node = mxmlFindElement(tree, tree, "ImagePath", NULL, NULL, MXML_DESCEND);
-                   qDebug() << node->child->value.opaque;
-                   m_pImageData->strImagePath = node->child->value.opaque;
+                   //qDebug() << node->child->value.opaque;
+                   qDebug() << "DetectArea";
+                   qDebug() << m_pImageData->strImagePath;
+                   qDebug() << "DetectArea 55";
+                   m_pImageData->strImagePath = QString(node->child->value.opaque);
+                    qDebug() << "DetectArea 55";
                }
+
+               qDebug() << "DetectArea";
                Detect = mxmlFindElement(ImageDetect, tree, "Detect", NULL, NULL, MXML_DESCEND);
                if(Detect != NULL)
                {
@@ -343,7 +350,10 @@ int XMLManager::GetDetectorData(std::vector<Detector *> &arrDetector)
 
 void XMLManager::SetImageData(ImageData *pImgData)
 {
-    m_pImageData = pImgData;
+    //m_pImageData = pImgData;
+    m_pImageData->nHeight = pImgData->nHeight;
+    m_pImageData->nWidth = pImgData->nWidth;
+    m_pImageData->strImagePath = pImgData->strImagePath;
 }
 
 void XMLManager::GetImageData(ImageData *pImgData)
