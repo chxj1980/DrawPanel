@@ -32,7 +32,9 @@ QPoint STU::StrUtils::SplitStrToPt(QString strXY, char chIdle)
         j++;
     }
     //qDebug() << "2" << j;
-    char chX1[20];
+    //const int num = j;
+    //char chX1[num];
+    char* chX1 = (char*)malloc(j);
     j = 0;
     while(chX[j] != chIdle)
     {
@@ -66,5 +68,6 @@ QPoint STU::StrUtils::SplitStrToPt(QString strXY, char chIdle)
 
     QPoint pt = QPoint(atoi(chX2), atoi(chY2));
     //qDebug() << pt.x() << "--" << pt.y();
+    free(chX1);
     return pt;
 }

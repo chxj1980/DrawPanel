@@ -14,6 +14,8 @@
 #include <QRadioButton>
 #include <QButtonGroup>
 #include <QTimer>
+#include "custommessagebox.h"
+#include "configfilemanager.h"
 
 //管理xml文件类
 #include "xmlmanager.h"
@@ -24,6 +26,7 @@ class QIcon;
 class QPixmap;
 class QPoint;
 class QPainter;
+class QCheckBox;
 
 namespace Ui {
 class MainWindow;
@@ -48,7 +51,7 @@ private:
     int  DrawPoint();
     void ChangePix(bool bIn);   //图片分辨率转换
     void ReSortData(int nIndex);          //重新排序
-
+    void AnimationShow();
 
 private slots:
     void LoadImage();
@@ -61,6 +64,7 @@ private slots:
     void OnRadioChecked(QAbstractButton* aBtn);
     void OnTimeSlot();
     void OnReTry();
+    void OnSelectType(int nType);
 
 protected:
     void resizeEvent(QResizeEvent *event);
@@ -98,6 +102,9 @@ private:
 
     int        m_AreaNum;
     int        m_nCurDetector;  //移动哪一个检测器
+    int        m_nCurLine;      //当前是哪一条线
+    int        m_nCurPoint;     //当前是哪一点
+    int        m_nCurPt;        //当前点
 
     int        m_nCurType;      //当前选中的类型
     int        m_nPreType;      //前一个选中的类型，通过类型判断是否创建新的detector
@@ -128,8 +135,11 @@ private:
     QRadioButton* m_pRadioArea;
     QRadioButton* m_pRadioTriLine;
     QRadioButton* m_pRadioComplete;
+    QCheckBox   * m_pCheckComplete;
     QTimer      * m_pTimer;
     XMLManager  * m_pXmlManager;
+    CustomMessageBox *m_pMsgBox;
+    ConfigFileManager *m_pConfigFileManager;
 
     std::vector<Detector*> m_arrDetector;   //所有检测类
 };

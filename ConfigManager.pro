@@ -19,14 +19,18 @@ SOURCES += main.cpp\
     xmlmanager.cpp \
     detector.cpp \
     strutils.cpp \
-    graphmath.cpp
+    graphmath.cpp \
+    custommessagebox.cpp \
+    configfilemanager.cpp
 
 HEADERS  += mainwindow.h \
     xmlmanager.h \
     detector.h \
     common.h \
     strutils.h \
-    graphmath.h
+    graphmath.h \
+    custommessagebox.h \
+    configfilemanager.h
 
 FORMS    += mainwindow.ui
 

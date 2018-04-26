@@ -18,6 +18,8 @@
 #include <Qt>
 #include <QTextCodec>
 #include <QStandardPaths>
+#include <QPropertyAnimation>
+#include <QCheckBox>
 
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent),
@@ -25,27 +27,21 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent),
     m_xPropertion(1),m_yPropertion(1),m_nRealWidth(1),m_nRealHeight(1),
     m_AreaNum(0),m_strFilePath(""),m_xOldPropertion(1),m_yOldPropertion(1),
     m_nCurType(0),m_nPreType(0),m_bBegin(true),m_bCanMoveView(false),m_nCurDetector(100),
-    m_bCanMovePoint(false),m_nPointIndex(0),m_bClick(false),m_nReEdit(100),m_bDoubleClick(false)
+    m_bCanMovePoint(false),m_nPointIndex(0),m_bClick(false),m_nReEdit(100),m_bDoubleClick(false),
+    m_nCurLine(100),m_nCurPoint(100),m_nCurPt(10000)
 {
     ui->setupUi(this);
     setMinimumSize(1400, 960);
     setMaximumSize(1400, 960);
     InitView();
     //InitToolBar();
-    InitRedioGroup();
+    //InitRedioGroup();
     UpdatePen();
     qDebug() << m_wigth;
-   // QPoint position = ui->label->rect().topLeft();
-   // m_LabelPos.setX(position.x() + ui->listWidget->geometry().width() + 175);
-   // m_LabelPos.setY(position.y() + ui->mainToolBar->height() + ui->menuBar->height() + 105);
-   // qDebug() << "起点坐标:" << m_LabelPos.x() << "---" << m_LabelPos.y();
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     m_painter = new QPainter;
     m_pTimer = new QTimer();
     m_pTimer->setInterval(1);
-
-    //ui->label->setMouseTracking(true);
-
     m_pXmlManager = new XMLManager;
 
     //time signal
@@ -55,8 +51,15 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent),
     m_pix = QPixmap(ui->label->geometry().width(), ui->label->geometry().height());
     m_pix.fill(Qt::white);
     m_realPix = m_pix;
-}
 
+    AnimationShow();
+    QTextCodec *pCoder = QTextCodec::codecForName("gb2312");
+    m_pMsgBox = new CustomMessageBox(CustomMessageBox::CUSTOM_MESSAGE_QUESTION, pCoder->toUnicode("操作选项"), "");
+    QObject::connect(m_pMsgBox, SIGNAL(SendCurType(int)), this, SLOT(OnSelectType(int)));
+
+    //加载配置文件
+    m_pConfigFileManager = new ConfigFileManager;
+}
 
 
 MainWindow::~MainWindow()
@@ -158,15 +161,25 @@ void MainWindow::InitRedioGroup()
     pLayout->addWidget(m_pRadioTriLine);
     m_pBtnGroup->addButton(m_pRadioTriLine);
 
+#if 0
+    m_pCheckComplete = new QCheckBox(this);
+    sprintf(chText, "%s", "编辑");
+    m_pCheckComplete->setText(pCoder->toUnicode(chText));
+    pLayout->addWidget(m_pCheckComplete);
+    m_pBtnGroup->addButton(m_pCheckComplete);
+#endif
+
+#if 1
     m_pRadioComplete = new QRadioButton(this);
     sprintf(chText, "%s", "编辑");
     m_pRadioComplete->setText(pCoder->toUnicode(chText));
     pLayout->addWidget(m_pRadioComplete);
     m_pBtnGroup->addButton(m_pRadioComplete);
+#endif
 
     pLayout->setSpacing(10);
     pLayout->setContentsMargins(10, 10, 10, 10);
-    ui->scrollArea->setLayout(pLayout);
+    //ui->scrollArea->setLayout(pLayout);
 
     //m_pRadioArea->setFocus();
     m_pRadioArea->setChecked(true);
@@ -387,7 +400,7 @@ int MainWindow::DrawBitmap(int x, int y)
 //遍历成员变量绘制点
 int MainWindow::PaintBitmap()
 {
-    qDebug() << "paint";
+    //qDebug() << "paint";
     if(m_pix.isNull())
         return -1;
     m_realPix = m_pix.scaled(ui->label->width(), ui->label->height());
@@ -418,7 +431,7 @@ int MainWindow::PaintBitmap()
         (*iterDetector)->GetPoints(arrPoints);
         for(int i = 0; i < arrPoints.size() - 1; i++)
         {
-            if(m_bClick == false && m_nCurType == 2 && m_nCurDetector == nDetector)
+            if(m_bClick == false && m_nCurType == 2 && m_nCurLine == nDetector)
             {
                 pen.setColor(QColor::fromRgb(125,125,66));
                 qp.setPen(pen);
@@ -427,6 +440,10 @@ int MainWindow::PaintBitmap()
 
             qp.drawLine(arrPoints[i], arrPoints[i+1]);
             pen.setColor(QColor::fromRgb(255,125,125));
+            if(m_bClick == false && m_nCurType == 2 && m_nCurPoint == nDetector && m_nCurPt == i)
+            {
+                pen.setColor(QColor::fromRgb(125,125,125));
+            }
             qp.setPen(pen);
             qp.drawEllipse(arrPoints[i].x() - 5, arrPoints[i].y() - 5, 10, 10);
 #ifdef COLORDEF
@@ -447,7 +464,7 @@ int MainWindow::PaintBitmap()
             qp.setPen(pen);
         }
 
-        if(m_bClick == false && m_nCurType == 2 && m_nCurDetector == nDetector)
+        if(m_bClick == false && m_nCurType == 2 && m_nCurLine == nDetector)
         {
             pen.setColor(QColor::fromRgb(125,125,66));
             qp.setPen(pen);
@@ -455,6 +472,10 @@ int MainWindow::PaintBitmap()
         }
         qp.drawLine(arrPoints[0], arrPoints[arrPoints.size() - 1]);
         pen.setColor(QColor::fromRgb(255,125,125));
+        if(m_bClick == false && m_nCurType == 2 && m_nCurPoint == nDetector && m_nCurPt == arrPoints.size() - 1)
+        {
+            pen.setColor(QColor::fromRgb(125,125,125));
+        }
         qp.setPen(pen);
         qp.drawEllipse(arrPoints[arrPoints.size() - 1].x() - 5,arrPoints[arrPoints.size() - 1].y() - 5, 10, 10);
 #ifdef COLORDEF
@@ -475,8 +496,14 @@ int MainWindow::PaintBitmap()
         qp.end();
     }
     if(m_bClick == false && m_nCurType == 2)
+    {
         m_nCurDetector = 100;
+        m_nCurLine = 100;
+        m_nCurPoint = 100;
+        m_nCurPt = 10000;
+    }
 
+    setCursor(Qt::ArrowCursor);
     return 0;
 }
 
@@ -584,15 +611,24 @@ void MainWindow::ReSortData(int nIndex)
         if(m_arrDetector[m_arrDetector.size() - 1]->GetType() == nDetArea)
         {
             m_nCurType = 0;
-            m_pRadioArea->setChecked(true);
+            //m_pRadioArea->setChecked(true);
         }
         else if(m_arrDetector[m_arrDetector.size() - 1]->GetType() == nTriLine)
         {
             m_nCurType = 1;
-            m_pRadioTriLine->setChecked(true);
+            //m_pRadioTriLine->setChecked(true);
             m_bBegin = true;
         }
     }
+}
+
+void MainWindow::AnimationShow()
+{
+    QPropertyAnimation *animation = new QPropertyAnimation(this, "windowOpacity");
+    animation->setDuration(1000);
+    animation->setStartValue(0);
+    animation->setEndValue(1);
+    animation->start();
 }
 
 void MainWindow::LoadImage()
@@ -665,8 +701,8 @@ void MainWindow::ResetView()
 
 void MainWindow::OnLoadData()
 {
-    QStringList strFileList = QStandardPaths::standardLocations(QStandardPaths::DesktopLocation);
-    m_strXmlPath = QFileDialog::getOpenFileName(this, tr("Open XML"), strFileList[0], tr("Xml Files (*.xml)"));
+    //QStringList strFileList = QStandardPaths::standardLocations(QStandardPaths::DesktopLocation);
+    m_strXmlPath = QFileDialog::getOpenFileName(this, tr("Open XML"), m_pConfigFileManager->GetXmlPath(), tr("Xml Files (*.xml)"));
     qDebug() << m_strXmlPath;
     if(m_strXmlPath != "")
     {
@@ -701,10 +737,20 @@ void MainWindow::OnSaveData()
 {
     if(m_strFilePath != "")
     {
+
         QFileInfo fi = QFileInfo(m_strFilePath);
-        QString file_name = fi.fileName();  //获取文件名
-        QString file_path = fi.absolutePath(); //获取文件路径(不包含文件名)
-        file_path += "/ImageData.xml";
+        QString file_name, file_path;
+        if(m_strXmlPath == "")
+        {
+            file_name = fi.fileName();  //获取文件名
+            file_path = fi.absolutePath(); //获取文件路径(不包含文件名)
+            file_path += "/ImageData.xml";
+        }
+        else
+        {
+            file_path = m_strXmlPath;
+        }
+
         qDebug() << file_path;
         file_path = QFileDialog::getSaveFileName(this, tr("Save File"),  file_path, tr("XML (*.xml)"));
         ImageData imgData;
@@ -722,6 +768,8 @@ void MainWindow::OnSaveData()
         m_pXmlManager->SetDetectorData(m_arrDetector);
         m_pXmlManager->SaveXML(file_path);
         ChangePix(false);
+        m_pConfigFileManager->SetXmlPath(m_strXmlPath);
+        m_pConfigFileManager->SaveConfigFile();
     }
 }
 
@@ -810,6 +858,49 @@ void MainWindow::OnReTry()
     DelPoint();
 }
 
+void MainWindow::OnSelectType(int nType)
+{
+    // 当前点击的按钮
+        //qDebug() << QString("Clicked Button : %1").arg(aBtn->text());
+        m_nPreType = m_nCurType;
+
+        // 遍历按钮，获取选中状态
+//        QList<QAbstractButton*> list = m_pBtnGroup->buttons();
+//        int i = 0;
+//        foreach (QAbstractButton *pButton, list)
+//        {
+//            if(pButton->isChecked())
+//            {
+//                QString strStatus = pButton->isChecked() ? "Checked" : "Unchecked";
+//                qDebug() << QString("Button : %1 is %2").arg(aBtn->text()).arg(strStatus);
+//                break;
+//            }
+//            i++;
+//        }
+
+        if(nType == 0)
+        {
+            //qDebug() << QString("Button : %1 is %2").arg(aBtn->text()).arg(aBtn->isChecked());
+            qDebug() << "Area";
+            m_nCurType = 0;
+            m_bBegin = true;
+        }
+        else if(nType == 1)
+        {
+            //qDebug() << QString("Button : %1 is %2").arg(aBtn->text()).arg(aBtn->isChecked());
+            qDebug() << "Line";
+            m_nCurType = 1;
+            m_bBegin = true;
+        }
+        else if(nType == 2)
+        {
+            //qDebug() << QString("Button : %1 is %2").arg(aBtn->text()).arg(aBtn->isChecked());
+            qDebug() << "Edit";
+            m_nCurType = 2;
+            m_bBegin = true;
+        }
+}
+
 void MainWindow::resizeEvent(QResizeEvent *event)
 {
     //ui->label->setPixmap(m_pix.scaled(ui->label->geometry().width(), ui->label->geometry().height()));
@@ -890,6 +981,17 @@ void MainWindow::resizeEvent(QResizeEvent *event)
 
 void MainWindow::mousePressEvent(QMouseEvent *event)
 {
+    if(m_strFilePath == "")
+        return;
+    if(event->button()== Qt::MiddleButton)
+        return;
+    //弹窗让用户选择功能
+    if(event->button() == Qt::RightButton)
+    {
+         m_pMsgBox->show();
+         return;
+    }
+
     m_bClick = true;
     qDebug() << "PressEvent";
     if(event->y() < (ui->label->y() + ui->mainToolBar->height() + ui->menuBar->height())
@@ -1006,7 +1108,7 @@ void MainWindow::mouseDoubleClickEvent(QMouseEvent *event)
 
 void MainWindow::mouseMoveEvent(QMouseEvent *event)
 {
-    qDebug() << "moveEvent";
+    //qDebug() << "moveEvent";
     if(m_nCurType == 2 && m_bClick == false)
     {
         m_qCurGlobal = event->globalPos();
@@ -1019,14 +1121,19 @@ void MainWindow::mouseMoveEvent(QMouseEvent *event)
             m_nPointIndex = (*iterDetector)->IsSamePoint(m_GlobalOldPos);
             if(m_nPointIndex >= 0)
             {
-                m_nCurDetector = i;
+                //m_nCurDetector = i;
+                m_nCurPoint = i;
+                m_nCurPt = m_nPointIndex;
+                setCursor(Qt::PointingHandCursor);
                 //m_bCanMovePoint = true;
                 qDebug() << "Color Change" << i;
                 break;
             }
             else if(/*(*iterDetector)->IsInArea(m_GlobalOldPos)*/(*iterDetector)->IsInLine(m_GlobalOldPos))
             {
-                m_nCurDetector = i;
+                //m_nCurDetector = i;
+                m_nCurLine = i;
+                setCursor(Qt::ClosedHandCursor);
                 //m_bCanMoveView = true;
                 qDebug() << "Color Change" << i;
                 break;
@@ -1100,8 +1207,9 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     {
            DelPoint();
     }
-    else if(event->key() == Qt::Key_Right)
+    else if(event->modifiers() ==  Qt::ControlModifier && event->key() == Qt::Key_S)
     {
+        m_bBegin = true;
            qDebug() << "del two";
     }
 }
